@@ -1,0 +1,25 @@
+README.md
+  c4f4b6dbe90ae8ab 3,5,10-16,20,22-60,62,64-71,74-85,88-122,124
+src/cli/commands/install.mjs
+  c4f4b6dbe90ae8ab 1,10-11,13,16,18,23-25,67-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "b29a00400c2e2318288b67f0ee05e84919c5923d",
+  "prompts": {
+    "c4f4b6dbe90ae8ab": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "unknown",
+        "model": "unknown"
+      },
+      "human_author": "Cabeza Cabrera, Miguel",
+      "messages": [],
+      "total_additions": 128,
+      "total_deletions": 22,
+      "accepted_lines": 128,
+      "overriden_lines": 0
+    }
+  }
+}
