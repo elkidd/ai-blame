@@ -1,13 +1,18 @@
 #!/bin/sh
-# ai-blame post-commit hook
-# Moves pending AI attribution records to a per-commit archive.
+# ai-blame global post-commit hook (dispatcher)
+# Runs ai-blame logic, then forwards to the repo's own post-commit hook if present.
 
+# --- ai-blame: move pending attribution to commit archive ---
 PENDING=".git/ai-blame/pending.jsonl"
-[ -f "$PENDING" ] || exit 0
-[ -s "$PENDING" ] || exit 0
+if [ -f "$PENDING" ] && [ -s "$PENDING" ]; then
+    SHA=$(git rev-parse HEAD)
+    COMMIT_DIR=".git/ai-blame/commits"
+    mkdir -p "$COMMIT_DIR"
+    mv "$PENDING" "$COMMIT_DIR/$SHA.jsonl"
+fi
 
-SHA=$(git rev-parse HEAD)
-COMMIT_DIR=".git/ai-blame/commits"
-mkdir -p "$COMMIT_DIR"
-
-mv "$PENDING" "$COMMIT_DIR/$SHA.jsonl"
+# --- dispatch to per-repo hook if it exists ---
+REPO_HOOK="$(git rev-parse --git-dir)/hooks/post-commit"
+if [ -x "$REPO_HOOK" ]; then
+    exec "$REPO_HOOK" "$@"
+fi

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, chmodSync, copyFileSync, readFileSync, appendFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, chmodSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -7,38 +7,35 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "../../..");
 
 export function install() {
-    const gitRoot = getGitRoot();
-    installGitHook(gitRoot);
+    installGlobalGitHook();
     installCopilotHooks();
-    ensureGitignore(gitRoot);
 }
 
-function getGitRoot() {
-    try {
-        return execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf-8" }).trim();
-    } catch {
-        console.error("Not a git repository. Run this from inside a git repo.");
-        process.exit(1);
-    }
-}
+function installGlobalGitHook() {
+    const globalHooksDir = join(process.env.HOME, ".config", "git", "hooks");
+    mkdirSync(globalHooksDir, { recursive: true });
 
-function installGitHook(gitRoot) {
-
-    const hooksDir = join(gitRoot, ".git", "hooks");
-    mkdirSync(hooksDir, { recursive: true });
-
+    const dispatcherTarget = join(globalHooksDir, "post-commit");
     const hookSource = join(projectRoot, "src", "git", "hooks", "post-commit");
-    const hookTarget = join(hooksDir, "post-commit");
+    const hookContent = readFileSync(hookSource, "utf-8");
 
-    if (existsSync(hookTarget)) {
-        console.log(`  Hook already exists at ${hookTarget}`);
-        console.log("  To replace it, remove it first and re-run install.");
-        return;
+    writeFileSync(dispatcherTarget, hookContent);
+    chmodSync(dispatcherTarget, 0o755);
+
+    // Set core.hooksPath if not already pointing here
+    try {
+        const current = execFileSync("git", ["config", "--global", "core.hooksPath"], { encoding: "utf-8" }).trim();
+        if (current === globalHooksDir) {
+            console.log(`  core.hooksPath already set -> ${globalHooksDir}`);
+        } else {
+            console.log(`  ⚠️  core.hooksPath is ${current} — overriding to ${globalHooksDir}`);
+            execFileSync("git", ["config", "--global", "core.hooksPath", globalHooksDir]);
+        }
+    } catch {
+        execFileSync("git", ["config", "--global", "core.hooksPath", globalHooksDir]);
     }
 
-    copyFileSync(hookSource, hookTarget);
-    chmodSync(hookTarget, 0o755);
-    console.log(`  Installed post-commit hook -> ${hookTarget}`);
+    console.log(`  Installed global post-commit dispatcher -> ${dispatcherTarget}`);
 }
 
 function installCopilotHooks() {
@@ -58,17 +55,4 @@ function installCopilotHooks() {
     writeFileSync(hookFile, JSON.stringify(hookConfig, null, 2) + "\n");
     console.log(`  Installed Copilot agent hooks -> ${hookFile}`);
     console.log("  Restart your Copilot CLI session to activate.");
-}
-
-function ensureGitignore(gitRoot) {
-    const gitignorePath = join(gitRoot, ".gitignore");
-    const entry = ".git/ai-blame/";
-
-    if (existsSync(gitignorePath)) {
-        const content = readFileSync(gitignorePath, "utf-8");
-        if (content.includes(entry)) return;
-    }
-
-    appendFileSync(gitignorePath, `\n# ai-blame tracking data\n${entry}\n`);
-    console.log(`  Added ${entry} to .gitignore`);
 }
