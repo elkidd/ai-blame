@@ -1,0 +1,11 @@
+{"file":"src/lib/store.mjs","lines":[[14,21],[56,56]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:36.941Z"}
+{"file":"src/cli/commands/checkpoint.mjs","lines":[[198,198]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:37.116Z"}
+{"file":"src/lib/store.mjs","lines":[[14,21],[56,56]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:37.277Z"}
+{"file":"src/cli/commands/blame.mjs","lines":[[3,3],[14,14],[113,113]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:46.658Z"}
+{"file":"src/cli/commands/blame.mjs","lines":[[3,3],[14,14],[113,113]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:46.822Z"}
+{"file":"src/cli/commands/blame.mjs","lines":[[3,3],[14,14],[113,113]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:46.985Z"}
+{"file":"src/cli/commands/log.mjs","lines":[[2,2],[38,38],[41,41],[43,43]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:55.432Z"}
+{"file":"src/cli/commands/log.mjs","lines":[[2,2],[38,38],[41,41],[43,43]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:55:55.591Z"}
+{"file":"src/cli/commands/stats.mjs","lines":[[2,2],[49,51],[76,77]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:56:04.483Z"}
+{"file":"src/cli/commands/stats.mjs","lines":[[2,2],[49,51],[76,77]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:56:04.645Z"}
+{"file":"src/cli/commands/stats.mjs","lines":[[2,2],[49,51],[76,77]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T20:56:04.809Z"}
