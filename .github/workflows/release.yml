@@ -18,28 +18,39 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check if release needed
+      - name: Resolve version
         id: check
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="v${VERSION}"
+
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Tag $TAG already exists — skipping release"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG exists — bumping minor version"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+            MINOR=$((MINOR + 1))
+            VERSION="${MAJOR}.${MINOR}.0"
+            TAG="v${VERSION}"
+            node -e "
+              const pkg = require('./package.json');
+              pkg.version = '${VERSION}';
+              require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            "
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add package.json
+            git commit -m "chore: bump version to ${VERSION}"
+            git push
           fi
 
-      - if: steps.check.outputs.skip == 'false'
-        run: npm ci
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG"
 
-      - if: steps.check.outputs.skip == 'false'
-        run: npm test
+      - run: npm ci
+
+      - run: npm test
 
       - name: Create tag and release
-        if: steps.check.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -49,7 +60,6 @@ jobs:
           gh release create "$TAG" --generate-notes
 
       - name: Update Homebrew formula
-        if: steps.check.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
