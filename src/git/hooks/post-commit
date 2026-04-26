@@ -1,0 +1,13 @@
+#!/bin/sh
+# ai-blame post-commit hook
+# Moves pending AI attribution records to a per-commit archive.
+
+PENDING=".git/ai-blame/pending.jsonl"
+[ -f "$PENDING" ] || exit 0
+[ -s "$PENDING" ] || exit 0
+
+SHA=$(git rev-parse HEAD)
+COMMIT_DIR=".git/ai-blame/commits"
+mkdir -p "$COMMIT_DIR"
+
+mv "$PENDING" "$COMMIT_DIR/$SHA.jsonl"

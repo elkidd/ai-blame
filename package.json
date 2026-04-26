@@ -1,0 +1,29 @@
+{
+  "name": "ai-blame",
+  "version": "0.1.0",
+  "description": "Track which lines of code were written by AI",
+  "type": "module",
+  "bin": {
+    "gitai": "./src/cli/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elkidd/ai-blame.git"
+  },
+  "keywords": [
+    "git",
+    "ai",
+    "blame",
+    "provenance",
+    "copilot"
+  ],
+  "author": "elkidd",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^14.0.3",
+    "diff": "^9.0.0"
+  }
+}
