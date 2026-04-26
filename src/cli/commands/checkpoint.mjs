@@ -2,9 +2,12 @@
 // Called by Copilot CLI agent hooks (PreToolUse / PostToolUse).
 // Reads tool call info from stdin JSON, snapshots files before edits,
 // diffs after edits, and writes attribution to pending.jsonl.
+//
+// Stdin fields use snake_case: tool_name, tool_input, tool_result, result_type.
+// Model is resolved from the session's events.jsonl via session_id.
 
-import { readFileSync, writeFileSync, mkdirSync, unlinkSync, appendFileSync, readdirSync } from "node:fs";
-import { join, resolve, isAbsolute } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync, appendFileSync, readdirSync } from "node:fs";
+import { join, resolve, isAbsolute, dirname } from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { diffArrays } from "diff";
@@ -14,11 +17,8 @@ const EDIT_TOOLS = new Set(["edit", "create"]);
 function gitDir(cwd) {
     try {
         const rel = execFileSync("git", ["rev-parse", "--git-dir"], {
-            cwd,
-            encoding: "utf-8",
-            stdio: ["pipe", "pipe", "pipe"],
+            cwd, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"],
         }).trim();
-        // git returns relative path — resolve against cwd
         return isAbsolute(rel) ? rel : resolve(cwd, rel);
     } catch {
         return null;
@@ -28,24 +28,21 @@ function gitDir(cwd) {
 function gitRoot(cwd) {
     try {
         return resolve(execFileSync("git", ["rev-parse", "--show-toplevel"], {
-            cwd,
-            encoding: "utf-8",
-            stdio: ["pipe", "pipe", "pipe"],
+            cwd, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"],
         }).trim());
     } catch {
         return null;
     }
 }
 
-function resolveFilePath(toolArgs, cwd) {
-    const p = toolArgs?.path;
+function resolveFilePath(toolInput, cwd) {
+    const p = toolInput?.path;
     if (!p) return null;
     return isAbsolute(p) ? p : resolve(cwd, p);
 }
 
 function snapshotKey(absPath) {
-    const hash = createHash("sha256").update(absPath).digest("hex").slice(0, 16);
-    return hash;
+    return createHash("sha256").update(absPath).digest("hex").slice(0, 16);
 }
 
 function readLines(path) {
@@ -58,14 +55,13 @@ function readLines(path) {
 }
 
 // Compute which lines in `after` are new or changed (AI-authored).
-function computeChangedLines(before, after) {
+export function computeChangedLines(before, after) {
     const changes = diffArrays(before, after);
     const ranges = [];
     let afterLine = 1;
 
     for (const change of changes) {
         if (change.removed) continue;
-
         if (change.added) {
             const start = afterLine;
             const end = afterLine + change.count - 1;
@@ -79,8 +75,31 @@ function computeChangedLines(before, after) {
             afterLine += change.count;
         }
     }
-
     return ranges;
+}
+
+// Resolve the model name from the session's events.jsonl.
+// Reads the last tool.execution_complete event to find the current model.
+function resolveModel(sessionId) {
+    if (!sessionId) return "unknown";
+    const eventsPath = join(
+        process.env.HOME, ".copilot", "session-state", sessionId, "events.jsonl"
+    );
+    if (!existsSync(eventsPath)) return "unknown";
+
+    try {
+        const content = readFileSync(eventsPath, "utf-8");
+        const lines = content.trimEnd().split("\n");
+        // Scan backwards for the most recent model
+        for (let i = lines.length - 1; i >= 0; i--) {
+            try {
+                const event = JSON.parse(lines[i]);
+                const model = event?.data?.model;
+                if (model) return model;
+            } catch { continue; }
+        }
+    } catch { /* ignore */ }
+    return "unknown";
 }
 
 function readStdin() {
@@ -88,16 +107,18 @@ function readStdin() {
 }
 
 function handlePre(input) {
-    const toolArgs = typeof input.toolArgs === "string" ? JSON.parse(input.toolArgs) : input.toolArgs;
-    const toolName = input.toolName;
+    const toolName = input.tool_name;
+    const toolInput = input.tool_input || {};
 
     if (!EDIT_TOOLS.has(toolName)) return;
 
     const cwd = input.cwd || process.cwd();
-    const absPath = resolveFilePath(toolArgs, cwd);
+    const absPath = resolveFilePath(toolInput, cwd);
     if (!absPath) return;
 
-    const gd = gitDir(cwd);
+    // Resolve git dir from the file's directory, not cwd
+    const fileDir = existsSync(absPath) ? dirname(absPath) : cwd;
+    const gd = gitDir(fileDir);
     if (!gd) return;
 
     const snapshotDir = join(gd, "ai-blame", "snapshots");
@@ -107,29 +128,29 @@ function handlePre(input) {
     const key = snapshotKey(absPath);
     const ts = Date.now();
 
-    // Stack-based: use timestamp suffix for LIFO ordering
     const snapshotFile = join(snapshotDir, `${key}_${ts}.json`);
     writeFileSync(snapshotFile, JSON.stringify({ path: absPath, lines }));
 }
 
 function handlePost(input) {
-    const toolArgs = typeof input.toolArgs === "string" ? JSON.parse(input.toolArgs) : input.toolArgs;
-    const toolName = input.toolName;
+    const toolName = input.tool_name;
+    const toolInput = input.tool_input || {};
 
     if (!EDIT_TOOLS.has(toolName)) return;
 
     // Skip failed tool calls
-    const result = input.toolResult;
-    if (result && result.resultType && result.resultType !== "success") return;
+    const result = input.tool_result;
+    if (result && result.result_type && result.result_type !== "success") return;
 
     const cwd = input.cwd || process.cwd();
-    const absPath = resolveFilePath(toolArgs, cwd);
+    const absPath = resolveFilePath(toolInput, cwd);
     if (!absPath) return;
 
-    const gd = gitDir(cwd);
+    const fileDir = existsSync(absPath) ? dirname(absPath) : cwd;
+    const gd = gitDir(fileDir);
     if (!gd) return;
 
-    const root = gitRoot(cwd);
+    const root = gitRoot(fileDir);
     if (!root) return;
 
     // Find the most recent snapshot for this file (LIFO pop)
@@ -167,10 +188,15 @@ function handlePost(input) {
         ? absPath.slice(root.length + 1)
         : absPath;
 
+    // Resolve model from session events
+    const sessionId = input.session_id || process.env.COPILOT_AGENT_SESSION_ID;
+    const model = resolveModel(sessionId);
+
     const record = {
         file: relativePath,
         lines: changedLines,
-        model: "copilot-cli",
+        tool: "copilot",
+        model,
         timestamp: new Date().toISOString(),
     };
 

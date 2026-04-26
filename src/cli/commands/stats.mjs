@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { getGitRoot, loadCommitData, countAiLines } from "../../lib/store.mjs";
+import { getGitRoot, loadCommitData, countAiLines, formatTool } from "../../lib/store.mjs";
 
 const CYAN = "\x1b[36m";
 const DIM = "\x1b[2m";
@@ -46,8 +46,9 @@ function showCommitStats(commit, commitData, gitRoot) {
     for (const [file, info] of fileMap) {
         const aiLines = countAiLines(info);
         totalAi += aiLines;
-        models.set(info.model, (models.get(info.model) || 0) + aiLines);
-        console.log(`  ${CYAN}${String(aiLines).padStart(4)} lines${RESET}  ${file}  ${DIM}(${info.model})${RESET}`);
+        const key = formatTool(info);
+        models.set(key, (models.get(key) || 0) + aiLines);
+        console.log(`  ${CYAN}${String(aiLines).padStart(4)} lines${RESET}  ${file}  ${DIM}(${formatTool(info)})${RESET}`);
     }
 
     console.log(`\n${BOLD}Total: ${totalAi} AI-attributed lines${RESET}`);
@@ -72,7 +73,8 @@ function showOverallStats(commitData) {
         for (const [file, info] of fileMap) {
             const aiLines = countAiLines(info);
             totalAi += aiLines;
-            models.set(info.model, (models.get(info.model) || 0) + aiLines);
+            const key = formatTool(info);
+            models.set(key, (models.get(key) || 0) + aiLines);
             fileStats.set(file, (fileStats.get(file) || 0) + aiLines);
         }
     }

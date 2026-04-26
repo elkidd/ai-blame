@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" --generate-notes
+
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          TARBALL="https://github.com/elkidd/ai-blame/archive/refs/tags/${TAG}.tar.gz"
+          SHA=$(curl -sL "$TARBALL" | sha256sum | cut -d' ' -f1)
+
+          gh repo clone elkidd/homebrew-tap /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+
+          sed -i "s|url \".*\"|url \"${TARBALL}\"|" Formula/gitai.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA}\"|" Formula/gitai.rb
+          sed -i "s|version \".*\"|version \"${VERSION}\"|" Formula/gitai.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/gitai.rb
+          git commit -m "gitai ${VERSION}"
+          git push

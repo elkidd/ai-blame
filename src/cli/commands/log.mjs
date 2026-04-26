@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { getGitRoot, loadCommitData, countAiLines } from "../../lib/store.mjs";
+import { getGitRoot, loadCommitData, countAiLines, formatTool } from "../../lib/store.mjs";
 
 const CYAN = "\x1b[36m";
 const DIM = "\x1b[2m";
@@ -35,12 +35,12 @@ export function log(options = {}) {
         const fileMap = commitData.get(fullSha);
         if (fileMap) {
             let totalAi = 0;
-            const models = new Set();
+            const toolModels = new Set();
             for (const [, info] of fileMap) {
                 totalAi += countAiLines(info);
-                models.add(info.model);
+                toolModels.add(formatTool(info));
             }
-            const modelStr = [...models].join(", ");
+            const modelStr = [...toolModels].join(", ");
             console.log(`${YELLOW}${shortSha}${RESET} ${msg}  ${CYAN}[AI: ${totalAi} lines - ${modelStr}]${RESET}`);
         } else {
             console.log(`${DIM}${shortSha}${RESET} ${msg}`);

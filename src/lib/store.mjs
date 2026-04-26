@@ -11,7 +11,14 @@ export function getGitRoot() {
     }
 }
 
-// Load all ai-blame data. Returns Map<sha, Map<file, { lines: [[start,end]], model: string }>>
+const TOOL_EMOJIS = { copilot: "🪁", cursor: "🖱️", claude: "🔶" };
+
+export function formatTool(info) {
+    const emoji = TOOL_EMOJIS[info.tool] || "🤖";
+    return `${emoji} › ${info.model}`;
+}
+
+// Load all ai-blame data. Returns Map<sha, Map<file, { lines, model, tool }>>
 export function loadCommitData(gitRoot) {
     const commitsDir = join(gitRoot, ".git", "ai-blame", "commits");
     const data = new Map();
@@ -46,7 +53,7 @@ function parseJsonl(content) {
     for (const line of content.split("\n")) {
         if (!line.trim()) continue;
         const record = JSON.parse(line);
-        const existing = fileMap.get(record.file) || { lines: [], model: record.model };
+        const existing = fileMap.get(record.file) || { lines: [], model: record.model, tool: record.tool || "copilot" };
         existing.lines.push(...record.lines);
         fileMap.set(record.file, existing);
     }

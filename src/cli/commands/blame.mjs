@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { getGitRoot, loadCommitData } from "../../lib/store.mjs";
+import { getGitRoot, loadCommitData, formatTool } from "../../lib/store.mjs";
 
 
 // Check if a line number falls within any AI-attributed range
@@ -11,7 +11,7 @@ function findAiAttribution(commitData, sha, file, lineNo) {
     if (!info) return null;
 
     for (const [start, end] of info.lines) {
-        if (lineNo >= start && lineNo <= end) return info.model;
+        if (lineNo >= start && lineNo <= end) return info;
     }
     return null;
 }
@@ -110,7 +110,7 @@ export function blame(file) {
 
         if (model) {
             aiLineCount++;
-            const tag = `${CYAN}[${model}]${RESET}`;
+            const tag = `${CYAN}[${formatTool(model)}]${RESET}`;
             console.log(`${DIM}${shortSha}${RESET} (${BOLD}${author}${RESET} ${line.date} ${lineNo}) ${line.content}  ${tag}`);
         } else {
             console.log(`${DIM}${shortSha}${RESET} (${author} ${line.date} ${lineNo}) ${line.content}`);
