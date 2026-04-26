@@ -1,0 +1,10 @@
+{"file":"src/cli/commands/install.mjs","lines":[[1,1],[10,10],[15,30]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:47:21.405Z"}
+{"file":"src/cli/commands/install.mjs","lines":[[1,1],[10,10],[15,30]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:47:21.542Z"}
+{"file":"src/git/hooks/post-commit","lines":[[3,3],[7,10]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:58:17.796Z"}
+{"file":"src/lib/store.mjs","lines":[[1,1],[25,80],[85,85],[90,90],[95,95],[97,100],[107,112]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:58:38.430Z"}
+{"file":"src/lib/store.mjs","lines":[[1,1]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:58:48.778Z"}
+{"file":"src/lib/store.mjs","lines":[[1,1]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:58:48.950Z"}
+{"file":"src/cli/commands/install.mjs","lines":[[12,12],[15,27]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:58:56.973Z"}
+{"file":"src/lib/store.mjs","lines":[[1,1],[25,25]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:59:14.758Z"}
+{"file":"src/lib/store.mjs","lines":[[1,1],[25,25]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:59:14.930Z"}
+{"file":"src/lib/store.mjs","lines":[[1,1],[25,25]],"tool":"copilot","model":"claude-opus-4.6","timestamp":"2026-04-26T22:59:15.113Z"}
