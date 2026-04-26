@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 
@@ -20,25 +20,12 @@ export function formatTool(info) {
 
 // Load all ai-blame data. Returns Map<sha, Map<file, { lines, model, tool }>>
 export function loadCommitData(gitRoot) {
-    const commitsDir = join(gitRoot, ".git", "ai-blame", "commits");
     const data = new Map();
 
-    let files;
-    try {
-        files = readdirSync(commitsDir);
-    } catch {
-        return data;
-    }
+    // Read from git notes
+    loadFromNotes(gitRoot, data);
 
-    for (const file of files) {
-        if (!file.endsWith(".jsonl")) continue;
-        const sha = file.replace(".jsonl", "");
-        const content = readFileSync(join(commitsDir, file), "utf-8");
-        const fileMap = parseJsonl(content);
-        if (fileMap.size > 0) data.set(sha, fileMap);
-    }
-
-    // Also check pending (uncommitted edits)
+    // Pending (uncommitted edits)
     try {
         const pending = readFileSync(join(gitRoot, ".git", "ai-blame", "pending.jsonl"), "utf-8");
         const fileMap = parseJsonl(pending);
@@ -48,14 +35,53 @@ export function loadCommitData(gitRoot) {
     return data;
 }
 
+function loadFromNotes(gitRoot, data) {
+    try {
+        // Bulk read: git log with notes inlined
+        const output = execFileSync("git", [
+            "log", "--format=%H%n%N", "--notes=ai-blame", "--all",
+        ], { encoding: "utf-8", cwd: gitRoot, maxBuffer: 10 * 1024 * 1024 });
+
+        let currentSha = null;
+        let noteLines = [];
+
+        for (const line of output.split("\n")) {
+            // SHA lines are exactly 40 hex chars
+            if (/^[0-9a-f]{40}$/.test(line)) {
+                if (currentSha && noteLines.length > 0) {
+                    const content = noteLines.join("\n");
+                    const fileMap = parseJsonl(content);
+                    if (fileMap.size > 0 && !data.has(currentSha)) {
+                        data.set(currentSha, fileMap);
+                    }
+                }
+                currentSha = line;
+                noteLines = [];
+            } else if (line.trim()) {
+                noteLines.push(line);
+            }
+        }
+        // Last commit
+        if (currentSha && noteLines.length > 0) {
+            const content = noteLines.join("\n");
+            const fileMap = parseJsonl(content);
+            if (fileMap.size > 0 && !data.has(currentSha)) {
+                data.set(currentSha, fileMap);
+            }
+        }
+    } catch { /* no notes ref yet */ }
+}
+
 function parseJsonl(content) {
     const fileMap = new Map();
     for (const line of content.split("\n")) {
         if (!line.trim()) continue;
-        const record = JSON.parse(line);
-        const existing = fileMap.get(record.file) || { lines: [], model: record.model, tool: record.tool || "copilot" };
-        existing.lines.push(...record.lines);
-        fileMap.set(record.file, existing);
+        try {
+            const record = JSON.parse(line);
+            const existing = fileMap.get(record.file) || { lines: [], model: record.model, tool: record.tool || "copilot" };
+            existing.lines.push(...record.lines);
+            fileMap.set(record.file, existing);
+        } catch { /* skip non-JSON lines */ }
     }
     return fileMap;
 }

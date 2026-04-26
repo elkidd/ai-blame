@@ -9,6 +9,20 @@ const projectRoot = resolve(__dirname, "../../..");
 export function install() {
     installGlobalGitHook();
     installCopilotHooks();
+    configureNotesRewrite();
+}
+
+function configureNotesRewrite() {
+    // Ensure notes survive amend/rebase
+    try {
+        const refs = execFileSync("git", ["config", "--global", "--get-all", "notes.rewriteRef"], { encoding: "utf-8" });
+        if (refs.includes("refs/notes/ai-blame")) {
+            console.log("  notes.rewriteRef already configured");
+            return;
+        }
+    } catch { /* not set yet */ }
+    execFileSync("git", ["config", "--global", "--add", "notes.rewriteRef", "refs/notes/ai-blame"]);
+    console.log("  Configured notes.rewriteRef for ai-blame (amend/rebase safe)");
 }
 
 function installGlobalGitHook() {
