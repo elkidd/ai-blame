@@ -1,0 +1,14 @@
+{"file":".gitignore","lines":[[1,7]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"README.md","lines":[[1,125]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"package-lock.json","lines":[[1,39]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"package.json","lines":[[1,30]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/cli/commands/blame.mjs","lines":[[1,127]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/cli/commands/checkpoint.mjs","lines":[[1,222]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/cli/commands/install.mjs","lines":[[1,75]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/cli/commands/log.mjs","lines":[[1,50]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/cli/commands/stats.mjs","lines":[[1,95]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/cli/index.mjs","lines":[[1,74]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/git/hooks/post-commit","lines":[[1,14]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"src/lib/store.mjs","lines":[[1,64]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"tools/copilot/extension.mjs","lines":[[1,166]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
+{"file":"tools/copilot/extension.test.mjs","lines":[[1,87]],"model":"claude-opus-4.6","timestamp":"2026-04-26T20:45:12.749Z"}
