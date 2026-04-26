@@ -57,7 +57,16 @@ jobs:
           TAG="${{ steps.check.outputs.tag }}"
           git tag "$TAG"
           git push origin "$TAG"
-          gh release create "$TAG" --generate-notes
+
+          # Build changelog from commits since last tag
+          PREV_TAG=$(git tag --sort=-v:refname | grep -v "$TAG" | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s" "$PREV_TAG..HEAD" --no-merges)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s" --no-merges)
+          fi
+
+          gh release create "$TAG" --title "$TAG" --notes "$CHANGELOG"
 
       - name: Update Homebrew formula
         env:
