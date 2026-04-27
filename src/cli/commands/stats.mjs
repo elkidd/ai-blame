@@ -97,21 +97,54 @@ function showOverallStats(commitData) {
         }
     }
 
-    // Count total lines in tracked files
+    // Count total lines and surviving AI lines
+    const root = getGitRoot();
     let totalLines = 0;
+    const fileLengths = new Map();
     try {
-        const output = execFileSync("git", ["ls-files", "-z"], { encoding: "utf-8", cwd: getGitRoot() });
+        const output = execFileSync("git", ["ls-files", "-z"], { encoding: "utf-8", cwd: root });
         const files = output.split("\0").filter(Boolean);
         for (const file of files) {
             try {
-                const content = execFileSync("git", ["show", `HEAD:${file}`], { encoding: "utf-8", cwd: getGitRoot() });
-                totalLines += content.split("\n").length;
+                const content = execFileSync("git", ["show", `HEAD:${file}`], { encoding: "utf-8", cwd: root });
+                const len = content.split("\n").length;
+                totalLines += len;
+                fileLengths.set(file, len);
             } catch { /* binary or missing */ }
         }
     } catch { /* ignore */ }
 
-    const summary = totalLines > 0
-        ? `${totalCommits} commits tracked, ${totalAi} AI-attributed lines / ${totalLines.toLocaleString()} total (${((totalAi / totalLines) * 100).toFixed(2)}%)`
-        : `${totalCommits} commits tracked, ${totalAi} total AI-attributed lines`;
-    console.log(`\n${DIM}${summary}${RESET}`);
+    // Merge all AI line ranges per file and clamp to current file length
+    const mergedRanges = new Map();
+    for (const [, fileMap] of commitData) {
+        for (const [file, info] of fileMap) {
+            const existing = mergedRanges.get(file) || [];
+            existing.push(...info.lines);
+            mergedRanges.set(file, existing);
+        }
+    }
+
+    let survivingAi = 0;
+    for (const [file, ranges] of mergedRanges) {
+        const fileLen = fileLengths.get(file);
+        if (fileLen == null) continue; // file deleted
+        // Merge overlapping ranges, clamp to file length
+        const sorted = ranges.map(([s, e]) => [s, Math.min(e, fileLen)]).filter(([s, e]) => s <= fileLen).sort((a, b) => a[0] - b[0]);
+        const merged = [];
+        for (const [s, e] of sorted) {
+            if (merged.length && s <= merged[merged.length - 1][1] + 1) {
+                merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], e);
+            } else {
+                merged.push([s, e]);
+            }
+        }
+        for (const [s, e] of merged) survivingAi += e - s + 1;
+    }
+
+    if (totalLines > 0) {
+        const pct = ((survivingAi / totalLines) * 100).toFixed(2);
+        console.log(`\n${DIM}${totalCommits} commits tracked, ${totalAi} AI lines written, ${survivingAi} still present (${pct}% of codebase)${RESET}`);
+    } else {
+        console.log(`\n${DIM}${totalCommits} commits tracked, ${totalAi} total AI-attributed lines${RESET}`);
+    }
 }
