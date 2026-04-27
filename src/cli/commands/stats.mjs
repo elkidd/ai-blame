@@ -86,11 +86,32 @@ function showOverallStats(commitData) {
         console.log(`  ${CYAN}${String(lines).padStart(4)} lines${RESET}  ${file}`);
     }
 
-    console.log(`\n${BOLD}Models:${RESET}`);
+    console.log(`\n${BOLD}AI lines by model:${RESET}`);
+    const multipleModels = models.size > 1;
     for (const [model, lines] of [...models.entries()].sort((a, b) => b[1] - a[1])) {
-        const pct = ((lines / totalAi) * 100).toFixed(1);
-        console.log(`  ${model}: ${lines} lines (${pct}%)`);
+        if (multipleModels) {
+            const pct = ((lines / totalAi) * 100).toFixed(1);
+            console.log(`  ${model}: ${lines} lines (${pct}%)`);
+        } else {
+            console.log(`  ${model}: ${lines} lines`);
+        }
     }
 
-    console.log(`\n${DIM}${totalCommits} commits tracked, ${totalAi} total AI-attributed lines${RESET}`);
+    // Count total lines in tracked files
+    let totalLines = 0;
+    try {
+        const output = execFileSync("git", ["ls-files", "-z"], { encoding: "utf-8", cwd: getGitRoot() });
+        const files = output.split("\0").filter(Boolean);
+        for (const file of files) {
+            try {
+                const content = execFileSync("git", ["show", `HEAD:${file}`], { encoding: "utf-8", cwd: getGitRoot() });
+                totalLines += content.split("\n").length;
+            } catch { /* binary or missing */ }
+        }
+    } catch { /* ignore */ }
+
+    const summary = totalLines > 0
+        ? `${totalCommits} commits tracked, ${totalAi} AI-attributed lines / ${totalLines.toLocaleString()} total (${((totalAi / totalLines) * 100).toFixed(2)}%)`
+        : `${totalCommits} commits tracked, ${totalAi} total AI-attributed lines`;
+    console.log(`\n${DIM}${summary}${RESET}`);
 }
